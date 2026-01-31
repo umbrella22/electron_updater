@@ -173,24 +173,22 @@ pub(crate) fn copy_file<P: AsRef<Path>>(
 
         thread::sleep(Duration::from_millis(10));
         if need_update_myself() && file_path == current_exe_path {
-            std::thread::spawn(move || {
-                loop {
-                    let update_myself_now = update_myself_now();
-                    Log::info(&format!("check UPDATE_MYSELF_NOW {update_myself_now}"));
-                    if update_myself_now {
-                        let parent = match from_path.parent() {
-                            Some(parent) => parent,
-                            None => {
-                                Log::error("无法获取旧文件父目录");
-                                break;
-                            }
-                        };
-                        let r = fs::rename(&file_path, parent.join("updater_old"));
-                        Log::info(format!("delete {r:#?}").as_str());
-                        let r = fs::rename(from_path, file_path);
-                        Log::info(format!("rename {r:#?}").as_str());
-                        break;
-                    }
+            std::thread::spawn(move || loop {
+                let update_myself_now = update_myself_now();
+                Log::info(&format!("check UPDATE_MYSELF_NOW {update_myself_now}"));
+                if update_myself_now {
+                    let parent = match from_path.parent() {
+                        Some(parent) => parent,
+                        None => {
+                            Log::error("无法获取旧文件父目录");
+                            break;
+                        }
+                    };
+                    let r = fs::rename(&file_path, parent.join("updater_old"));
+                    Log::info(format!("delete {r:#?}").as_str());
+                    let r = fs::rename(from_path, file_path);
+                    Log::info(format!("rename {r:#?}").as_str());
+                    break;
                 }
             });
             continue;
@@ -212,7 +210,10 @@ pub(crate) fn copy_file<P: AsRef<Path>>(
     true
 }
 
-pub(crate) fn flush_config_file(running_config_file: &mut fs::File, running_config: &RunningConfig) {
+pub(crate) fn flush_config_file(
+    running_config_file: &mut fs::File,
+    running_config: &RunningConfig,
+) {
     if let Err(e) = running_config_file.set_len(0) {
         Log::error("清空配置文件失败");
         Log::error(e.to_string().as_str());

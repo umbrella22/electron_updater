@@ -212,13 +212,7 @@ pub fn run_task(ui: impl UpdateUi) {
                 update_temp_path: String::new(),
                 moved_path: Vec::new(),
             };
-            update(
-                &ui,
-                exe_path_buf,
-                false,
-                config,
-                running_config_path,
-            );
+            update(&ui, exe_path_buf, false, config, running_config_path);
         }
         _ => {
             Log::error("获取exe_path变量错误; 程序将退出");
@@ -262,23 +256,11 @@ pub fn run_task(ui: impl UpdateUi) {
                     }
                     Ok(config) if config.status == RunningState::Updating => {
                         let exe_path_buf = PathBuf::from(&config.exe_path);
-                        update(
-                            &ui,
-                            exe_path_buf,
-                            true,
-                            config,
-                            running_config_path,
-                        );
+                        update(&ui, exe_path_buf, true, config, running_config_path);
                     }
                     Ok(config) if config.status == RunningState::UpdateButNotCheck => {
                         let exe_path_buf = PathBuf::from(&config.exe_path);
-                        update(
-                            &ui,
-                            exe_path_buf,
-                            false,
-                            config,
-                            running_config_path,
-                        );
+                        update(&ui, exe_path_buf, false, config, running_config_path);
                     }
                     Ok(_) => {
                         Log::info("程序无执行任务");
