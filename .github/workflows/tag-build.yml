@@ -1,0 +1,245 @@
+name: tag-build
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+env:
+  CARGO_INCREMENTAL: 0
+  RUST_BACKTRACE: short
+
+concurrency:
+  group: "${{ github.workflow }} - ${{ github.ref }}"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: build-${{ matrix.build }}
+    strategy:
+      fail-fast: false
+      matrix:
+        build:
+          - linux-x86_64
+          - macos-x86_64
+          - macos-aarch64
+          - windows-x86_64-msvc
+          - windows-i686-msvc
+        include:
+          - build: linux-x86_64
+            os: ubuntu-latest
+            osname: linux
+            target: x86_64-unknown-linux-gnu
+          - build: macos-x86_64
+            os: macos-latest
+            osname: macos
+            target: x86_64-apple-darwin
+          - build: macos-aarch64
+            os: macos-latest
+            osname: macos
+            target: aarch64-apple-darwin
+          - build: windows-x86_64-msvc
+            os: windows-latest
+            osname: win
+            target: x86_64-pc-windows-msvc
+          - build: windows-i686-msvc
+            os: windows-latest
+            osname: win
+            target: i686-pc-windows-msvc
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-all-crates: true
+
+      - name: Install dependencies (ubuntu only)
+        if: contains(matrix.os, 'ubuntu')
+        run: |
+          sudo apt update
+          sudo apt install -y libx11-dev libpango1.0-dev libxkbcommon-dev libxkbcommon-x11-dev libgtk-3-dev gcc-multilib
+
+      - name: Build (druid)
+        if: matrix.build != 'macos-aarch64'
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --no-default-features --features druid --target=${{ matrix.target }}
+
+      - name: Collect (druid)
+        if: matrix.build != 'macos-aarch64'
+        shell: bash
+        run: |
+          mkdir -p dist
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            if [ "${{ matrix.target }}" = "i686-pc-windows-msvc" ]; then
+              cp "target/${{ matrix.target }}/release/updater.exe" "dist/updater_win_ia32.exe"
+            else
+              cp "target/${{ matrix.target }}/release/updater.exe" "dist/updater_win_x64.exe"
+            fi
+          else
+            cp "target/${{ matrix.target }}/release/updater" "dist/updater_${{ matrix.osname }}_x64"
+          fi
+
+      - name: Build (cli)
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --no-default-features --target=${{ matrix.target }}
+
+      - name: Collect (cli)
+        shell: bash
+        run: |
+          mkdir -p dist
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            if [ "${{ matrix.target }}" = "i686-pc-windows-msvc" ]; then
+              cp "target/${{ matrix.target }}/release/updater.exe" "dist/updater_cli_win_ia32.exe"
+            else
+              cp "target/${{ matrix.target }}/release/updater.exe" "dist/updater_cli_win_x64.exe"
+            fi
+          else
+            if [ "${{ matrix.build }}" = "macos-aarch64" ]; then
+              cp "target/${{ matrix.target }}/release/updater" "dist/updater_macos_arm64"
+            else
+              cp "target/${{ matrix.target }}/release/updater" "dist/updater_cli_${{ matrix.osname }}_x64"
+            fi
+          fi
+
+      - name: Build (druid,debug)
+        if: matrix.build != 'macos-aarch64'
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --no-default-features --features druid,debug --target=${{ matrix.target }}
+
+      - name: Collect (druid,debug)
+        if: matrix.build != 'macos-aarch64'
+        shell: bash
+        run: |
+          mkdir -p dist
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            if [ "${{ matrix.target }}" = "i686-pc-windows-msvc" ]; then
+              cp "target/${{ matrix.target }}/release/updater.exe" "dist/debug_updater_win_ia32.exe"
+            else
+              cp "target/${{ matrix.target }}/release/updater.exe" "dist/debug_updater_win_x64.exe"
+            fi
+          else
+            cp "target/${{ matrix.target }}/release/updater" "dist/debug_updater_${{ matrix.osname }}_x64"
+          fi
+
+      - name: Build (debug)
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --no-default-features --features debug --target=${{ matrix.target }}
+
+      - name: Collect (debug)
+        shell: bash
+        run: |
+          mkdir -p dist
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            if [ "${{ matrix.target }}" = "i686-pc-windows-msvc" ]; then
+              cp "target/${{ matrix.target }}/release/updater.exe" "dist/debug_updater_cli_win_ia32.exe"
+            else
+              cp "target/${{ matrix.target }}/release/updater.exe" "dist/debug_updater_cli_win_x64.exe"
+            fi
+          else
+            if [ "${{ matrix.build }}" = "macos-aarch64" ]; then
+              cp "target/${{ matrix.target }}/release/updater" "dist/debug_updater_macos_arm64"
+            else
+              cp "target/${{ matrix.target }}/release/updater" "dist/debug_updater_cli_${{ matrix.osname }}_x64"
+            fi
+          fi
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.build }}
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    name: release
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: dist-*
+          merge-multiple: true
+
+      - name: Generate release body
+        shell: bash
+        run: |
+          TAG_REF="${GITHUB_REF_NAME:-${GITHUB_REF##*/}}"
+          echo "TAG_NAME=$TAG_REF" >> "$GITHUB_ENV"
+          VERSION="${TAG_REF#v}"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "BUILDTIME=$(TZ=Asia/Shanghai date)" >> "$GITHUB_ENV"
+          echo "DOWNLOAD_URL=https://github.com/${GITHUB_REPOSITORY}/releases/download/$TAG_REF" >> "$GITHUB_ENV"
+          
+          PREV_TAG="$(git describe --tags --abbrev=0 "${TAG_REF}^" 2>/dev/null || true)"
+          if [ -n "$PREV_TAG" ]; then
+            UPDATE_LOGS="$(git log --pretty=format:'- %s (%h)' "$PREV_TAG..$TAG_REF")"
+          else
+            UPDATE_LOGS="$(git log --pretty=format:'- %s (%h)' -n 50)"
+          fi
+          
+          if [ -z "$UPDATE_LOGS" ]; then
+            UPDATE_LOGS="- Changelog unavailable for this release."
+          fi
+          
+          cat > release.txt << EOF
+          $UPDATE_LOGS
+          
+          ## 下载地址
+          
+          ### macOS
+          - [Apple Silicon](${{ env.DOWNLOAD_URL }}/updater_macos_arm64) | [Intel](${{ env.DOWNLOAD_URL }}/updater_macos_x64)
+          - [CLI Intel](${{ env.DOWNLOAD_URL }}/updater_cli_macos_x64)
+          
+          ### Linux
+          - [x64](${{ env.DOWNLOAD_URL }}/updater_linux_x64) | [CLI x64](${{ env.DOWNLOAD_URL }}/updater_cli_linux_x64)
+          
+          ### Windows
+          - [x64](${{ env.DOWNLOAD_URL }}/updater_win_x64.exe) | [ia32](${{ env.DOWNLOAD_URL }}/updater_win_ia32.exe)
+          - [CLI x64](${{ env.DOWNLOAD_URL }}/updater_cli_win_x64.exe) | [CLI ia32](${{ env.DOWNLOAD_URL }}/updater_cli_win_ia32.exe)
+          
+          ### Debug
+          - macOS: [Apple Silicon](${{ env.DOWNLOAD_URL }}/debug_updater_macos_arm64) | [Intel](${{ env.DOWNLOAD_URL }}/debug_updater_macos_x64)
+          - macOS CLI: [Intel](${{ env.DOWNLOAD_URL }}/debug_updater_cli_macos_x64)
+          - Linux: [x64](${{ env.DOWNLOAD_URL }}/debug_updater_linux_x64) | [CLI x64](${{ env.DOWNLOAD_URL }}/debug_updater_cli_linux_x64)
+          - Windows: [x64](${{ env.DOWNLOAD_URL }}/debug_updater_win_x64.exe) | [ia32](${{ env.DOWNLOAD_URL }}/debug_updater_win_ia32.exe)
+          - Windows CLI: [x64](${{ env.DOWNLOAD_URL }}/debug_updater_cli_win_x64.exe) | [ia32](${{ env.DOWNLOAD_URL }}/debug_updater_cli_win_ia32.exe)
+          
+          Created at ${{ env.BUILDTIME }}.
+          EOF
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG_NAME }}
+          name: "updater ${{ env.TAG_NAME }}"
+          body_path: release.txt
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-rc') }}
+          files: dist/**
+          fail_on_unmatched_files: true
