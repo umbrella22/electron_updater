@@ -205,8 +205,10 @@ jobs:
           echo "TAG_NAME=$TAG_REF" >> "$GITHUB_ENV"
           VERSION="${TAG_REF#v}"
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-          echo "BUILDTIME=$(TZ=Asia/Shanghai date)" >> "$GITHUB_ENV"
-          echo "DOWNLOAD_URL=https://github.com/${GITHUB_REPOSITORY}/releases/download/$TAG_REF" >> "$GITHUB_ENV"
+          BUILDTIME="$(TZ=Asia/Shanghai date)"
+          echo "BUILDTIME=$BUILDTIME" >> "$GITHUB_ENV"
+          DOWNLOAD_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/$TAG_REF"
+          echo "DOWNLOAD_URL=$DOWNLOAD_URL" >> "$GITHUB_ENV"
           
           PREV_TAG="$(git describe --tags --abbrev=0 "${TAG_REF}^" 2>/dev/null || true)"
           if [ -n "$PREV_TAG" ]; then
@@ -225,27 +227,27 @@ jobs:
           ## 下载地址
           
           ### macOS
-          - [Apple Silicon](${{ env.DOWNLOAD_URL }}/updater_macos_arm64) | [Intel](${{ env.DOWNLOAD_URL }}/updater_macos_x64)
-          - [CLI Intel](${{ env.DOWNLOAD_URL }}/updater_cli_macos_x64)
-          - [Demo Intel](${{ env.DOWNLOAD_URL }}/updater_demo_macos_x64)
+          - [Apple Silicon]($DOWNLOAD_URL/updater_macos_arm64) | [Intel]($DOWNLOAD_URL/updater_macos_x64)
+          - [CLI Intel]($DOWNLOAD_URL/updater_cli_macos_x64)
+          - [Demo Intel]($DOWNLOAD_URL/updater_demo_macos_x64)
           
           ### Linux
-          - [x64](${{ env.DOWNLOAD_URL }}/updater_linux_x64) | [CLI x64](${{ env.DOWNLOAD_URL }}/updater_cli_linux_x64)
-          - [Demo x64](${{ env.DOWNLOAD_URL }}/updater_demo_linux_x64)
+          - [x64]($DOWNLOAD_URL/updater_linux_x64) | [CLI x64]($DOWNLOAD_URL/updater_cli_linux_x64)
+          - [Demo x64]($DOWNLOAD_URL/updater_demo_linux_x64)
           
           ### Windows
-          - [x64](${{ env.DOWNLOAD_URL }}/updater_win_x64.exe) | [ia32](${{ env.DOWNLOAD_URL }}/updater_win_ia32.exe)
-          - [CLI x64](${{ env.DOWNLOAD_URL }}/updater_cli_win_x64.exe) | [CLI ia32](${{ env.DOWNLOAD_URL }}/updater_cli_win_ia32.exe)
-          - [Demo x64](${{ env.DOWNLOAD_URL }}/updater_demo_win_x64.exe) | [Demo ia32](${{ env.DOWNLOAD_URL }}/updater_demo_win_ia32.exe)
+          - [x64]($DOWNLOAD_URL/updater_win_x64.exe) | [ia32]($DOWNLOAD_URL/updater_win_ia32.exe)
+          - [CLI x64]($DOWNLOAD_URL/updater_cli_win_x64.exe) | [CLI ia32]($DOWNLOAD_URL/updater_cli_win_ia32.exe)
+          - [Demo x64]($DOWNLOAD_URL/updater_demo_win_x64.exe) | [Demo ia32]($DOWNLOAD_URL/updater_demo_win_ia32.exe)
           
           ### Debug
-          - macOS: [Apple Silicon](${{ env.DOWNLOAD_URL }}/debug_updater_macos_arm64) | [Intel](${{ env.DOWNLOAD_URL }}/debug_updater_macos_x64)
-          - macOS CLI: [Intel](${{ env.DOWNLOAD_URL }}/debug_updater_cli_macos_x64)
-          - Linux: [x64](${{ env.DOWNLOAD_URL }}/debug_updater_linux_x64) | [CLI x64](${{ env.DOWNLOAD_URL }}/debug_updater_cli_linux_x64)
-          - Windows: [x64](${{ env.DOWNLOAD_URL }}/debug_updater_win_x64.exe) | [ia32](${{ env.DOWNLOAD_URL }}/debug_updater_win_ia32.exe)
-          - Windows CLI: [x64](${{ env.DOWNLOAD_URL }}/debug_updater_cli_win_x64.exe) | [ia32](${{ env.DOWNLOAD_URL }}/debug_updater_cli_win_ia32.exe)
+          - macOS: [Apple Silicon]($DOWNLOAD_URL/debug_updater_macos_arm64) | [Intel]($DOWNLOAD_URL/debug_updater_macos_x64)
+          - macOS CLI: [Intel]($DOWNLOAD_URL/debug_updater_cli_macos_x64)
+          - Linux: [x64]($DOWNLOAD_URL/debug_updater_linux_x64) | [CLI x64]($DOWNLOAD_URL/debug_updater_cli_linux_x64)
+          - Windows: [x64]($DOWNLOAD_URL/debug_updater_win_x64.exe) | [ia32]($DOWNLOAD_URL/debug_updater_win_ia32.exe)
+          - Windows CLI: [x64]($DOWNLOAD_URL/debug_updater_cli_win_x64.exe) | [ia32]($DOWNLOAD_URL/debug_updater_cli_win_ia32.exe)
           
-          Created at ${{ env.BUILDTIME }}.
+          Created at $BUILDTIME.
           EOF
 
       - name: Publish release
