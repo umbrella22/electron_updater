@@ -11,13 +11,12 @@ debug = ["fern", "log", "chrono"]
 
 
 [dependencies]
-serde_json = "1.0.66"
-serde = "1.0.127"
-serde_derive = "1.0.127"
-sysinfo = "0.28.4"
-druid = {  git = "https://github.com/linebender/druid.git", optional = true}
-fern = { version = "0.6.1", features = ["date-based", "colored"], optional = true }
-log = { version = "0.4.17", optional = true}
-chrono = { version = "*", optional = true}
-
+serde_json = "1.0.149"
+serde = "1.0.228"
+serde_derive = "1.0.228"
+sysinfo = "0.38.0"
+druid = { version = "0.8.3", optional = true }
+fern = { version = "0.7.1", features = ["date-based", "colored"], optional = true }
+log = { version = "0.4.29", optional = true }
+chrono = { version = "0.4.43", optional = true }
 
