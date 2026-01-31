@@ -2,10 +2,10 @@
 #![windows_subsystem = "windows"]
 
 fn main() {
-    #[cfg(feature = "druid")]
+    #[cfg(feature = "gpui")]
     updater::ui::start_ui();
 
-    #[cfg(not(feature = "druid"))]
+    #[cfg(not(feature = "gpui"))]
     {
         struct HeadlessUi;
         impl updater::UpdateUi for HeadlessUi {
