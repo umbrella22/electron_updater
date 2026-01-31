@@ -21,9 +21,9 @@ pub fn start_ui() {
     let initial_state: UpdateState = UpdateState { progressbar: 0.0 };
     let launcher = AppLauncher::with_window(main_window);
     let event_sink = launcher.get_external_handle();
-    
+
     std::thread::spawn(move || update(event_sink));
-    
+
     launcher
         .launch(initial_state)
         .expect("Failed to launch application");

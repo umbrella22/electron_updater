@@ -4,7 +4,7 @@
 fn main() {
     #[cfg(feature = "druid")]
     updater::ui::start_ui();
-    
+
     #[cfg(not(feature = "druid"))]
     {
         struct HeadlessUi;
