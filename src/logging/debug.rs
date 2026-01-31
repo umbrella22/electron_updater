@@ -1,9 +1,11 @@
 use std::{fs::create_dir, path::Path};
 
-use super::Logtrait;
+use super::Logger;
 use log::{debug, error, info, warn};
+
 pub struct Log {}
-impl Logtrait for Log {
+
+impl Logger for Log {
     fn setup_logging() {
         if !Path::new("log").exists() {
             if let Err(e) = create_dir("log") {

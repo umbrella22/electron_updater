@@ -8,7 +8,7 @@ use std::{
 
 use serde_json;
 
-use crate::mlog::{Log, Logtrait};
+use crate::logging::{Log, Logger};
 
 use super::{
     callbacks::UpdateUi,

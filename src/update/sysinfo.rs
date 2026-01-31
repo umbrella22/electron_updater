@@ -1,7 +1,7 @@
 use std::{env, path::Path};
 use sysinfo::{Pid, System};
 
-use crate::mlog::{Log, Logtrait};
+use crate::logging::{Log, Logger};
 
 /// 结束electron的进程
 ///

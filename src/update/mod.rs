@@ -1,8 +1,9 @@
-pub mod callbacks;
-pub mod ops;
-pub mod runner;
-pub mod state;
+mod callbacks;
+mod ops;
+mod runner;
+mod state;
 pub mod sysinfo;
-pub mod task;
 
 pub use callbacks::UpdateUi;
+pub use runner::run_task;
+pub use state::{RunningConfig, RunningState};

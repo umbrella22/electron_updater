@@ -1,72 +1,11 @@
-// use std::sync::Arc;
-
 use druid::debug_state::DebugState;
 use druid::widget::prelude::*;
 use druid::widget::Flex;
-use druid::Application;
-use druid::{
-    theme, AppLauncher, Color, Data, Lens, LinearGradient, Point, Rect, UnitPoint, WidgetExt,
-    WindowDesc,
-};
+use druid::{theme, Color, LinearGradient, Point, Rect, UnitPoint, WidgetExt};
 
-use crate::mlog::Log;
-use crate::mlog::Logtrait;
-use crate::task::UpdateUi;
-#[derive(Clone, Data, Lens, Default)]
-struct UpdateState {
-    progressbar: f64,
-}
+use super::UpdateState;
 
-pub fn start_ui() {
-    // describe the main window
-    // describe the main window
-    let main_window = WindowDesc::new(build_root_widget())
-        .title("更新程序")
-        .window_size((400.0, 40.0))
-        .resizable(false)
-        .show_titlebar(false);
-    // create the initial app state
-    // 进度条显示
-    let initial_state: UpdateState = UpdateState { progressbar: 0.0 };
-    // start the application. Here we pass in the application state.
-    let launcher = AppLauncher::with_window(main_window);
-    // 给进度条的回调
-    let event_sink = launcher.get_external_handle();
-    std::thread::spawn(move || update(event_sink));
-    launcher
-        // .log_to_console()
-        .launch(initial_state)
-        .expect("Failed to launch application");
-}
-
-struct DruidUi {
-    event_sink: druid::ExtEventSink,
-}
-
-impl UpdateUi for DruidUi {
-    fn on_progress(&self, progress: f64) {
-        let event_sink = self.event_sink.clone();
-        event_sink.add_idle_callback(move |state: &mut UpdateState| {
-            state.progressbar = progress;
-        })
-    }
-
-    fn on_quit(&self) {
-        let event_sink = self.event_sink.clone();
-        Log::info("退出");
-        event_sink.add_idle_callback(move |_: &mut UpdateState| {
-            Log::info("ui退出");
-            Application::global().quit();
-        })
-    }
-}
-// 更新程序及显示ui
-fn update(event_sink: druid::ExtEventSink) {
-    let ui = DruidUi { event_sink };
-    crate::task::run_task(ui);
-}
-
-fn build_root_widget() -> impl Widget<UpdateState> {
+pub fn build_root_widget() -> impl Widget<UpdateState> {
     Flex::column()
         .with_spacer(10.0)
         .with_child(
@@ -80,11 +19,13 @@ fn build_root_widget() -> impl Widget<UpdateState> {
 
 #[derive(Debug, Clone, Default)]
 struct ProgressBarWidget {}
+
 impl ProgressBarWidget {
     pub fn new() -> ProgressBarWidget {
         Self::default()
     }
 }
+
 impl Widget<f64> for ProgressBarWidget {
     fn event(&mut self, _ctx: &mut EventCtx, _event: &Event, _data: &mut f64, _env: &Env) {}
     fn lifecycle(&mut self, _ctx: &mut LifeCycleCtx, _event: &LifeCycle, _data: &f64, _env: &Env) {}

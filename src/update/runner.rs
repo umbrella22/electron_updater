@@ -7,7 +7,7 @@ use std::{
 use serde_json;
 
 use crate::{
-    mlog::{Log, Logtrait},
+    logging::{Log, Logger},
     update::sysinfo::end_electron_main,
 };
 
