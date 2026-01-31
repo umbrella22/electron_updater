@@ -2,6 +2,7 @@ use std::{
     env, fs,
     io::{Seek, Write},
     path::Path,
+    sync::atomic::{AtomicBool, Ordering},
     thread,
     time::Duration,
 };
@@ -15,28 +16,24 @@ use super::{
     state::{RunningConfig, RunningState, UpdateConfigJson},
 };
 
-static mut NEED_UPDATE_MYSELF: bool = false;
-static mut UPDATE_MYSELF_NOW: bool = false;
+static NEED_UPDATE_MYSELF: AtomicBool = AtomicBool::new(false);
+static UPDATE_MYSELF_NOW: AtomicBool = AtomicBool::new(false);
 
 fn set_need_update_myself(value: bool) {
-    unsafe {
-        NEED_UPDATE_MYSELF = value;
-    }
+    NEED_UPDATE_MYSELF.store(value, Ordering::SeqCst);
 }
 
 fn need_update_myself() -> bool {
-    unsafe { NEED_UPDATE_MYSELF }
+    NEED_UPDATE_MYSELF.load(Ordering::SeqCst)
 }
 
 fn update_myself_now() -> bool {
-    unsafe { UPDATE_MYSELF_NOW }
+    UPDATE_MYSELF_NOW.load(Ordering::SeqCst)
 }
 
 pub(crate) fn mark_update_myself_now() -> bool {
-    unsafe {
-        UPDATE_MYSELF_NOW = true;
-        UPDATE_MYSELF_NOW
-    }
+    UPDATE_MYSELF_NOW.store(true, Ordering::SeqCst);
+    UPDATE_MYSELF_NOW.load(Ordering::SeqCst)
 }
 
 pub(crate) fn check_permission<P: AsRef<Path>>(
@@ -175,7 +172,6 @@ pub(crate) fn copy_file<P: AsRef<Path>>(
         if need_update_myself() && file_path == current_exe_path {
             std::thread::spawn(move || loop {
                 let update_myself_now = update_myself_now();
-                Log::info(&format!("check UPDATE_MYSELF_NOW {update_myself_now}"));
                 if update_myself_now {
                     let parent = match from_path.parent() {
                         Some(parent) => parent,
@@ -190,6 +186,7 @@ pub(crate) fn copy_file<P: AsRef<Path>>(
                     Log::info(format!("rename {r:#?}").as_str());
                     break;
                 }
+                std::thread::sleep(Duration::from_millis(50));
             });
             continue;
         }

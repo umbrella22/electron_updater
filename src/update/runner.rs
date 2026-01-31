@@ -81,34 +81,26 @@ fn update(
     Log::info(update_config_file_name.as_str());
     Log::info("读取更新配置：");
     Log::info("读取更新配置路径：");
-    Log::info(
-        update_temp_path
-            .join(&update_config_file_name)
-            .to_string_lossy()
-            .as_ref(),
-    );
-    running_config.update_temp_path = update_temp_path
-        .join(&update_config_file_name)
-        .to_string_lossy()
-        .to_string();
+    let update_config_path = update_temp_path.join(&update_config_file_name);
+    Log::info(update_config_path.to_string_lossy().as_ref());
+    running_config.update_temp_path = update_temp_path.to_string_lossy().to_string();
     flush_config_file(&mut running_config_file, &running_config);
-    let config: UpdateConfigJson = match serde_json::from_slice(
-        &fs::read(update_temp_path.join(update_config_file_name)).unwrap_or_default(),
-    ) {
-        Ok(config) => config,
-        _ => {
-            Log::error("读取更新配置失败：");
-            running_config.status = RunningState::Nothing;
-            flush_config_file(&mut running_config_file, &running_config);
-            ui.on_quit();
-            return;
-        }
-    };
+    let config: UpdateConfigJson =
+        match serde_json::from_slice(&fs::read(&update_config_path).unwrap_or_default()) {
+            Ok(config) => config,
+            _ => {
+                Log::error("读取更新配置失败：");
+                running_config.status = RunningState::Nothing;
+                flush_config_file(&mut running_config_file, &running_config);
+                ui.on_quit();
+                return;
+            }
+        };
     Log::info("读取更新配置为：");
     Log::info(format!("{config:#?}").as_str());
     Log::info("开始更新");
     Log::info("处理未关闭的electron进程");
-    end_electron_main(path);
+    end_electron_main(exe_path);
     if !skip_check {
         if !check_permission(&config, path, update_temp_path.as_path(), &mut running_config) {
             running_config.status = RunningState::Nothing;
@@ -139,10 +131,17 @@ fn update(
         let update_myself_now = mark_update_myself_now();
         Log::info(&format!("set UPDATE_MYSELF_NOW {update_myself_now}"));
         std::thread::sleep(std::time::Duration::from_millis(500));
-        if let Err(e) = fs::remove_dir_all(update_temp_path) {
-            Log::error("清理更新文件出错：");
-            Log::error(e.to_string().as_str());
-        }
+        match update_temp_path.file_name().and_then(|name| name.to_str()) {
+            Some("update_temp") => {
+                if let Err(e) = fs::remove_dir_all(update_temp_path) {
+                    Log::error("清理更新文件出错：");
+                    Log::error(e.to_string().as_str());
+                }
+            }
+            _ => {
+                Log::error("清理更新文件已跳过：update_temp_path 目录名不匹配 update_temp");
+            }
+        };
         Log::info("清理更新文件完成");
         Log::info("重启程序");
         let mut child = match process::Command::new(exe_path)
