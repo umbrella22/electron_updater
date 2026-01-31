@@ -72,10 +72,8 @@ jobs:
 
       - name: Build (druid)
         if: matrix.build != 'macos-aarch64'
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --no-default-features --features druid --target=${{ matrix.target }}
+        shell: bash
+        run: cargo build --release --no-default-features --features druid --target="${{ matrix.target }}"
 
       - name: Collect (druid)
         if: matrix.build != 'macos-aarch64'
@@ -93,10 +91,8 @@ jobs:
           fi
 
       - name: Build (cli)
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --no-default-features --target=${{ matrix.target }}
+        shell: bash
+        run: cargo build --release --no-default-features --target="${{ matrix.target }}"
 
       - name: Collect (cli)
         shell: bash
@@ -118,10 +114,8 @@ jobs:
 
       - name: Build (druid,debug)
         if: matrix.build != 'macos-aarch64'
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --no-default-features --features druid,debug --target=${{ matrix.target }}
+        shell: bash
+        run: cargo build --release --no-default-features --features druid,debug --target="${{ matrix.target }}"
 
       - name: Collect (druid,debug)
         if: matrix.build != 'macos-aarch64'
@@ -139,10 +133,8 @@ jobs:
           fi
 
       - name: Build (debug)
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --no-default-features --features debug --target=${{ matrix.target }}
+        shell: bash
+        run: cargo build --release --no-default-features --features debug --target="${{ matrix.target }}"
 
       - name: Collect (debug)
         shell: bash
