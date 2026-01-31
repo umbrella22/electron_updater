@@ -20,19 +20,16 @@ pub fn end_electron_main<P: AsRef<Path>>(path: P) -> bool {
             Log::info(format!("pid进程: {pid:#?}").as_str());
 
             // []
-            #[cfg(any(
-                target_os = "freebsd",
-                target_os = "linux",
-                target_os = "android",
-                target_os = "macos",
-                target_os = "ios",
-            ))]
-            let pid = pid.parse::<i32>().unwrap();
-
-            #[cfg(target_os = "windows")]
-            let pid = pid.parse::<usize>().unwrap();
-            if let Some(process) = sys.process(Pid::from(pid)) {
-                process.kill();
+            match pid.parse::<usize>() {
+                Ok(pid) => {
+                    if let Some(process) = sys.process(Pid::from(pid)) {
+                        process.kill();
+                    }
+                }
+                Err(e) => {
+                    Log::error("exe_pid 解析失败");
+                    Log::error(e.to_string().as_str());
+                }
             }
         }
         _ => (),

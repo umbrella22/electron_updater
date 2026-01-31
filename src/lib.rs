@@ -1,8 +1,9 @@
-pub mod sysinfo;
+pub mod update;
 
 #[cfg(feature = "druid")]
 pub mod ui;
 
 pub mod mlog;
 
-pub mod task;
+pub use update::sysinfo;
+pub use update::task;

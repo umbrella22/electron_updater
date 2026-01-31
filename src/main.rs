@@ -5,9 +5,14 @@ fn main() {
     #[cfg(feature = "druid")]
     updater::ui::start_ui();
     #[cfg(not(feature = "druid"))]
-    let quit_app_fn = || {
-        std::process::exit(0);
-    };
+    struct HeadlessUi;
     #[cfg(not(feature = "druid"))]
-    updater::task::run_task(&quit_app_fn);
+    impl updater::task::UpdateUi for HeadlessUi {
+        fn on_progress(&self, _progress: f64) {}
+        fn on_quit(&self) {
+            std::process::exit(0);
+        }
+    }
+    #[cfg(not(feature = "druid"))]
+    updater::task::run_task(HeadlessUi);
 }

@@ -6,7 +6,10 @@ pub struct Log {}
 impl Logtrait for Log {
     fn setup_logging() {
         if !Path::new("log").exists() {
-            create_dir("log").unwrap()
+            if let Err(e) = create_dir("log") {
+                eprintln!("create log dir failed: {e}");
+                return;
+            }
         };
         let base_config = fern::Dispatch::new().level(log::LevelFilter::Debug);
         let file_config = fern::Dispatch::new()
@@ -20,7 +23,9 @@ impl Logtrait for Log {
                 ))
             })
             .chain(fern::DateBased::new("log/log.", "%Y-%m-%d"));
-        base_config.chain(file_config).apply().unwrap();
+        if let Err(e) = base_config.chain(file_config).apply() {
+            eprintln!("apply log config failed: {e}");
+        }
     }
     fn info(info: &str) {
         info!("{info}");

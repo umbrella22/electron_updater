@@ -11,6 +11,7 @@ use druid::{
 
 use crate::mlog::Log;
 use crate::mlog::Logtrait;
+use crate::task::UpdateUi;
 #[derive(Clone, Data, Lens, Default)]
 struct UpdateState {
     progressbar: f64,
@@ -37,27 +38,32 @@ pub fn start_ui() {
         .launch(initial_state)
         .expect("Failed to launch application");
 }
-// 更新程序及显示ui
-fn update(event_sink: druid::ExtEventSink) {
-    // let arc_event_sink = Arc::new(event_sink);
-    let quit_app_fn = || {
-        // let event_sink = arc_event_sink.clone();
+
+struct DruidUi {
+    event_sink: druid::ExtEventSink,
+}
+
+impl UpdateUi for DruidUi {
+    fn on_progress(&self, progress: f64) {
+        let event_sink = self.event_sink.clone();
+        event_sink.add_idle_callback(move |state: &mut UpdateState| {
+            state.progressbar = progress;
+        })
+    }
+
+    fn on_quit(&self) {
+        let event_sink = self.event_sink.clone();
         Log::info("退出");
-        // std::thread::spawn(move || {
         event_sink.add_idle_callback(move |_: &mut UpdateState| {
             Log::info("ui退出");
             Application::global().quit();
         })
-        // });
-    };
-    let ui_callback = |process: f64| {
-        // let event_sink = arc_event_sink.clone();
-        event_sink.add_idle_callback(move |state: &mut UpdateState| {
-            state.progressbar = process;
-        })
-    };
-    // 更新
-    crate::task::run_task(&quit_app_fn, &ui_callback);
+    }
+}
+// 更新程序及显示ui
+fn update(event_sink: druid::ExtEventSink) {
+    let ui = DruidUi { event_sink };
+    crate::task::run_task(ui);
 }
 
 fn build_root_widget() -> impl Widget<UpdateState> {
@@ -98,7 +104,7 @@ impl Widget<f64> for ProgressBarWidget {
     fn paint(&mut self, ctx: &mut PaintCtx, data: &f64, env: &Env) {
         let height = env.get(theme::BASIC_WIDGET_HEIGHT);
         let corner_radius = env.get(theme::PROGRESS_BAR_RADIUS);
-        let clamped = data.max(0.0).min(1.0);
+        let clamped = data.clamp(0.0, 1.0);
         let stroke_width = 2.0;
         let inset = -stroke_width / 2.0;
         let size = ctx.size();
@@ -115,22 +121,17 @@ impl Widget<f64> for ProgressBarWidget {
         let background_gradient = LinearGradient::new(
             UnitPoint::TOP,
             UnitPoint::BOTTOM,
-            (
-                env.get(theme::BACKGROUND_LIGHT),
-                env.get(theme::BACKGROUND_DARK),
-            ),
+            (env.get(theme::BACKGROUND_LIGHT), env.get(theme::BACKGROUND_DARK)),
         );
         ctx.fill(rounded_rect, &background_gradient);
 
         // Paint the bar
         let calculated_bar_width = clamped * rounded_rect.width();
 
-        let rounded_rect = Rect::from_origin_size(
-            Point::new(-inset, 0.),
-            Size::new(calculated_bar_width, height),
-        )
-        .inset((0.0, inset))
-        .to_rounded_rect(corner_radius);
+        let rounded_rect =
+            Rect::from_origin_size(Point::new(-inset, 0.), Size::new(calculated_bar_width, height))
+                .inset((0.0, inset))
+                .to_rounded_rect(corner_radius);
 
         let bar_gradient = LinearGradient::new(
             UnitPoint::TOP,
