@@ -9,6 +9,13 @@ enum UiMsg {
 }
 
 pub fn start_ui() {
+    if std::env::var("exe_path")
+        .ok()
+        .is_none_or(|path| !std::path::Path::new(&path).is_absolute())
+        && !std::path::Path::new(".running_status").exists()
+    {
+        return;
+    }
     let app = Application::new();
 
     app.run(move |cx| {
@@ -24,6 +31,20 @@ pub fn start_ui() {
                 std::thread::spawn(move || run_task(GpuiUi { tx }));
 
                 view
+            })
+            .expect("Failed to open window");
+    });
+}
+
+#[cfg(feature = "demo")]
+pub fn start_demo_ui() {
+    let app = Application::new();
+
+    app.run(move |cx| {
+        let _window_handle = cx
+            .open_window(WindowOptions::default(), move |window, cx| {
+                window.set_window_title("更新程序（演示模式）");
+                cx.new(|_cx| UpdateView { progress: 0.6 })
             })
             .expect("Failed to open window");
     });
@@ -61,7 +82,6 @@ impl UpdateUi for GpuiUi {
 
     fn on_quit(&self) {
         let _ = self.tx.try_send(UiMsg::Quit);
-        std::process::exit(0);
     }
 }
 

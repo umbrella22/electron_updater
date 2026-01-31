@@ -90,6 +90,26 @@ jobs:
             cp "target/${{ matrix.target }}/release/updater" "dist/updater_${{ matrix.osname }}_x64"
           fi
 
+      - name: Build (demo)
+        if: matrix.build != 'macos-aarch64'
+        shell: bash
+        run: cargo build --release --no-default-features --features demo --target="${{ matrix.target }}"
+
+      - name: Collect (demo)
+        if: matrix.build != 'macos-aarch64'
+        shell: bash
+        run: |
+          mkdir -p dist
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            if [ "${{ matrix.target }}" = "i686-pc-windows-msvc" ]; then
+              cp "target/${{ matrix.target }}/release/updater.exe" "dist/updater_demo_win_ia32.exe"
+            else
+              cp "target/${{ matrix.target }}/release/updater.exe" "dist/updater_demo_win_x64.exe"
+            fi
+          else
+            cp "target/${{ matrix.target }}/release/updater" "dist/updater_demo_${{ matrix.osname }}_x64"
+          fi
+
       - name: Build (cli)
         shell: bash
         run: cargo build --release --no-default-features --target="${{ matrix.target }}"
@@ -207,13 +227,16 @@ jobs:
           ### macOS
           - [Apple Silicon](${{ env.DOWNLOAD_URL }}/updater_macos_arm64) | [Intel](${{ env.DOWNLOAD_URL }}/updater_macos_x64)
           - [CLI Intel](${{ env.DOWNLOAD_URL }}/updater_cli_macos_x64)
+          - [Demo Intel](${{ env.DOWNLOAD_URL }}/updater_demo_macos_x64)
           
           ### Linux
           - [x64](${{ env.DOWNLOAD_URL }}/updater_linux_x64) | [CLI x64](${{ env.DOWNLOAD_URL }}/updater_cli_linux_x64)
+          - [Demo x64](${{ env.DOWNLOAD_URL }}/updater_demo_linux_x64)
           
           ### Windows
           - [x64](${{ env.DOWNLOAD_URL }}/updater_win_x64.exe) | [ia32](${{ env.DOWNLOAD_URL }}/updater_win_ia32.exe)
           - [CLI x64](${{ env.DOWNLOAD_URL }}/updater_cli_win_x64.exe) | [CLI ia32](${{ env.DOWNLOAD_URL }}/updater_cli_win_ia32.exe)
+          - [Demo x64](${{ env.DOWNLOAD_URL }}/updater_demo_win_x64.exe) | [Demo ia32](${{ env.DOWNLOAD_URL }}/updater_demo_win_ia32.exe)
           
           ### Debug
           - macOS: [Apple Silicon](${{ env.DOWNLOAD_URL }}/debug_updater_macos_arm64) | [Intel](${{ env.DOWNLOAD_URL }}/debug_updater_macos_x64)

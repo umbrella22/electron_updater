@@ -2,10 +2,13 @@
 #![windows_subsystem = "windows"]
 
 fn main() {
-    #[cfg(feature = "gpui")]
+    #[cfg(feature = "demo")]
+    updater::ui::start_demo_ui();
+
+    #[cfg(all(feature = "gpui", not(feature = "demo")))]
     updater::ui::start_ui();
 
-    #[cfg(not(feature = "gpui"))]
+    #[cfg(not(any(feature = "gpui", feature = "demo")))]
     {
         struct HeadlessUi;
         impl updater::UpdateUi for HeadlessUi {

@@ -3,7 +3,6 @@ use std::{
     io::{Seek, Write},
     path::Path,
     sync::atomic::{AtomicBool, Ordering},
-    thread,
     time::Duration,
 };
 
@@ -167,8 +166,6 @@ pub(crate) fn copy_file<P: AsRef<Path>>(
         Log::info("迁移的源文件:");
         Log::info(from_path.to_string_lossy().as_ref());
         ui.on_progress(hand_file_num / total_file);
-
-        thread::sleep(Duration::from_millis(10));
         if need_update_myself() && file_path == current_exe_path {
             std::thread::spawn(move || loop {
                 let update_myself_now = update_myself_now();

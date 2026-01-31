@@ -196,7 +196,6 @@ fn callback(running_config_file: &mut fs::File, running_config: &mut RunningConf
 pub fn run_task(ui: impl UpdateUi) {
     Log::setup_logging();
     Log::info("程序开始");
-    std::thread::sleep(std::time::Duration::from_millis(500));
     Log::info("获取electron程序的执行目录,判断任务状态");
     let running_config_path = Path::new(".running_status");
 
