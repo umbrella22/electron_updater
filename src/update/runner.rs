@@ -35,7 +35,7 @@ fn update(
                 Err(e) => {
                     Log::error("打开运行状态文件失败");
                     Log::error(e.to_string().as_str());
-                    ui.on_quit();
+                    ui.on_failed();
                     return;
                 }
             }
@@ -45,7 +45,7 @@ fn update(
                 Err(e) => {
                     Log::error("创建运行状态文件失败");
                     Log::error(e.to_string().as_str());
-                    ui.on_quit();
+                    ui.on_failed();
                     return;
                 }
             }
@@ -60,7 +60,7 @@ fn update(
         Some(path) => path,
         None => {
             Log::error("无法获取根目录");
-            ui.on_quit();
+            ui.on_failed();
             return;
         }
     };
@@ -92,7 +92,7 @@ fn update(
                 Log::error("读取更新配置失败：");
                 running_config.status = RunningState::Nothing;
                 flush_config_file(&mut running_config_file, &running_config);
-                ui.on_quit();
+                ui.on_failed();
                 return;
             }
         };
@@ -106,7 +106,7 @@ fn update(
             running_config.status = RunningState::Nothing;
             flush_config_file(&mut running_config_file, &running_config);
             Log::error("检测权限不通过，更新结束");
-            ui.on_quit();
+            ui.on_failed();
             return;
         };
         running_config.status = RunningState::Updating;
@@ -123,6 +123,8 @@ fn update(
         ui,
     ) {
         callback(&mut running_config_file, &mut running_config);
+        ui.on_failed();
+        return;
     } else {
         running_config.status = RunningState::Finish;
         flush_config_file(&mut running_config_file, &running_config);
@@ -152,7 +154,7 @@ fn update(
             Err(e) => {
                 Log::error("重启程序失败");
                 Log::error(e.to_string().as_str());
-                ui.on_quit();
+                ui.on_failed();
                 return;
             }
         };
@@ -233,7 +235,7 @@ pub fn run_task(ui: impl UpdateUi) {
                                     Err(e) => {
                                         Log::error("打开运行状态文件失败");
                                         Log::error(e.to_string().as_str());
-                                        ui.on_quit();
+                                        ui.on_failed();
                                         return;
                                     }
                                 }
@@ -243,14 +245,14 @@ pub fn run_task(ui: impl UpdateUi) {
                                     Err(e) => {
                                         Log::error("创建运行状态文件失败");
                                         Log::error(e.to_string().as_str());
-                                        ui.on_quit();
+                                        ui.on_failed();
                                         return;
                                     }
                                 }
                             }
                         };
                         callback(&mut running_config_file, &mut config);
-                        ui.on_quit();
+                        ui.on_failed();
                     }
                     Ok(config) if config.status == RunningState::Updating => {
                         let exe_path_buf = PathBuf::from(&config.exe_path);
@@ -266,7 +268,7 @@ pub fn run_task(ui: impl UpdateUi) {
                     }
                     _ => {
                         Log::error("读取运行配置失败：");
-                        ui.on_quit();
+                        ui.on_failed();
                     }
                 };
             }
