@@ -124,7 +124,6 @@ fn update(
     ) {
         callback(&mut running_config_file, &mut running_config);
         ui.on_failed();
-        return;
     } else {
         running_config.status = RunningState::Finish;
         flush_config_file(&mut running_config_file, &running_config);

@@ -3,7 +3,7 @@ use gpui::*;
 
 use crate::update::{run_task, UpdateUi};
 
-use super::view::{UpdateStatus, UpdateView};
+use super::view::{UpdateStatus, UpdateView, WINDOW_HEIGHT, WINDOW_WIDTH};
 use super::UiMsg;
 
 pub fn start_ui() {
@@ -18,11 +18,11 @@ pub fn start_ui() {
 
     app.run(move |cx| {
         let (tx, rx) = async_channel::unbounded::<UiMsg>();
-        let bounds = Bounds::centered(None, size(px(360.0), px(233.0)), cx);
+        let bounds = Bounds::centered(None, size(px(WINDOW_WIDTH), px(WINDOW_HEIGHT)), cx);
         let window_options = WindowOptions {
             window_bounds: Some(WindowBounds::Windowed(bounds)),
             is_resizable: false,
-            window_min_size: Some(size(px(360.0), px(233.0))),
+            window_min_size: Some(size(px(WINDOW_WIDTH), px(WINDOW_HEIGHT))),
             ..Default::default()
         };
 
@@ -50,11 +50,11 @@ pub fn start_demo_ui() {
     let app = Application::new();
 
     app.run(move |cx| {
-        let bounds = Bounds::centered(None, size(px(360.0), px(233.0)), cx);
+        let bounds = Bounds::centered(None, size(px(WINDOW_WIDTH), px(WINDOW_HEIGHT)), cx);
         let window_options = WindowOptions {
             window_bounds: Some(WindowBounds::Windowed(bounds)),
             is_resizable: false,
-            window_min_size: Some(size(px(360.0), px(233.0))),
+            window_min_size: Some(size(px(WINDOW_WIDTH), px(WINDOW_HEIGHT))),
             ..Default::default()
         };
         let (tx, _rx) = async_channel::unbounded::<UiMsg>();
