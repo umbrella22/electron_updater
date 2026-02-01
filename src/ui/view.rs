@@ -83,12 +83,7 @@ impl Render for UpdateView {
                                 UpdateStatus::Failed => "×",
                             }),
                     )
-                    .child(
-                        div()
-                            .text_color(rgb(0xffffff))
-                            .text_xl()
-                            .child(status_text),
-                    )
+                    .child(div().text_color(rgb(0xffffff)).text_xl().child(status_text))
                     .child(
                         div()
                             .w(px(PROGRESS_BAR_WIDTH))
@@ -124,9 +119,7 @@ impl Render for UpdateView {
                             ),
                     )
                     .child(match self.status {
-                        UpdateStatus::Downloading => div()
-                            .w(px(PROGRESS_BAR_WIDTH))
-                            .h(px(32.0)),
+                        UpdateStatus::Downloading => div().w(px(PROGRESS_BAR_WIDTH)).h(px(32.0)),
                         UpdateStatus::Completed => div()
                             .w(px(PROGRESS_BAR_WIDTH))
                             .h(px(32.0))

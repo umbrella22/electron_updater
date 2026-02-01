@@ -71,12 +71,7 @@ pub fn start_demo_ui() {
     });
 }
 
-fn start_event_loop(
-    view: Entity<UpdateView>,
-    rx: Receiver<UiMsg>,
-    tx: Sender<UiMsg>,
-    cx: &App,
-) {
+fn start_event_loop(view: Entity<UpdateView>, rx: Receiver<UiMsg>, tx: Sender<UiMsg>, cx: &App) {
     cx.spawn(async move |cx| {
         while let Ok(msg) = rx.recv().await {
             match msg {
