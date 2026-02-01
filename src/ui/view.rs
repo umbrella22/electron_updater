@@ -135,29 +135,12 @@ impl Render for UpdateView {
 
 impl UpdateView {
     fn render_action_button(&self, cx: &mut Context<Self>, _color: Rgba) -> impl IntoElement {
-        let (label, click_handler): (&str, Box<dyn Fn(&mut UpdateView, &mut Window, &mut App)>) =
-            match self.status {
-                UpdateStatus::Downloading => (
-                    "取消",
-                    Box::new(|view, _, _| {
-                        view.status = UpdateStatus::Cancelled;
-                    }),
-                ),
-                UpdateStatus::Completed => (
-                    "立即重启",
-                    Box::new(|view, _, _| {
-                        let _ = view.retry_tx.try_send(UiMsg::Quit);
-                    }),
-                ),
-                UpdateStatus::Failed | UpdateStatus::Cancelled => (
-                    "重试",
-                    Box::new(|view, _, _| {
-                        view.status = UpdateStatus::Downloading;
-                        view.progress = 0.0;
-                        let _ = view.retry_tx.try_send(UiMsg::Retry);
-                    }),
-                ),
-            };
+        let status = self.status;
+        let label = match status {
+            UpdateStatus::Downloading => "取消",
+            UpdateStatus::Completed => "立即重启",
+            UpdateStatus::Failed | UpdateStatus::Cancelled => "重试",
+        };
 
         div()
             .cursor_pointer()
@@ -176,8 +159,20 @@ impl UpdateView {
                     .text_color(rgb(0xffffff))
                     .child(label)
             )
-            .on_mouse_down(MouseButton::Left, cx.listener(move |view, _, window, cx| {
-                click_handler(view, window, cx);
+            .on_mouse_down(MouseButton::Left, cx.listener(move |view, _, _window, _cx| {
+                match status {
+                    UpdateStatus::Downloading => {
+                        view.status = UpdateStatus::Cancelled;
+                    }
+                    UpdateStatus::Completed => {
+                        let _ = view.retry_tx.try_send(UiMsg::Quit);
+                    }
+                    UpdateStatus::Failed | UpdateStatus::Cancelled => {
+                        view.status = UpdateStatus::Downloading;
+                        view.progress = 0.0;
+                        let _ = view.retry_tx.try_send(UiMsg::Retry);
+                    }
+                }
             }))
     }
 }
