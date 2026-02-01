@@ -25,13 +25,12 @@ impl Render for UpdateView {
         let progress = self.progress.clamp(0.0, 1.0);
         let percentage = (progress * 100.0).round() as i32;
 
-        // Theme Colors - Minimalist Dark
-        let root_bg = rgb(0x09090b); // zinc-950
+        let root_bg = rgb(0x09090b);
 
         let theme_color = match self.status {
-            UpdateStatus::Completed => rgb(0x22c55e), // green-500
-            UpdateStatus::Failed | UpdateStatus::Cancelled => rgb(0xef4444), // red-500
-            _ => rgb(0x3b82f6),                       // blue-500
+            UpdateStatus::Completed => rgb(0x22c55e),
+            UpdateStatus::Failed | UpdateStatus::Cancelled => rgb(0xef4444),
+            _ => rgb(0x3b82f6),
         };
 
         let status_text = match self.status {
@@ -41,16 +40,14 @@ impl Render for UpdateView {
             UpdateStatus::Cancelled => "已取消",
         };
 
-        // Calculate progress bar width (300 - 48 padding = 252)
         let bar_width = 252.0 * progress;
-
-        // Helper for opacity
-        let icon_bg = Rgba {
-            r: theme_color.r,
-            g: theme_color.g,
-            b: theme_color.b,
-            a: 0.1,
+        let is_downloading = matches!(self.status, UpdateStatus::Downloading);
+        let primary_text = if is_downloading {
+            format!("{}%", percentage)
+        } else {
+            status_text.to_string()
         };
+        let primary_size = if is_downloading { px(36.0) } else { px(28.0) };
 
         div()
             .size_full()
@@ -62,79 +59,46 @@ impl Render for UpdateView {
             .p(px(24.0))
             .gap(px(16.0))
             .child(
-                // Top Section: Icon/Percentage
                 div()
                     .flex()
                     .flex_col()
                     .items_center()
                     .gap(px(8.0))
                     .child(
-                        match self.status {
-                            UpdateStatus::Downloading => {
-                                div()
-                                    .text_size(px(36.0))
-                                    .font_weight(FontWeight::BOLD)
-                                    .text_color(theme_color)
-                                    .child(format!("{}%", percentage))
-                            },
-                            _ => {
-                                div()
-                                    .w(px(48.0))
-                                    .h(px(48.0))
-                                    .rounded_full()
-                                    .bg(icon_bg)
-                                    .flex()
-                                    .items_center()
-                                    .justify_center()
-                                    .child(
-                                        div()
-                                            .text_2xl()
-                                            .text_color(theme_color)
-                                            .child(match self.status {
-                                                UpdateStatus::Completed => "✓",
-                                                UpdateStatus::Failed => "!",
-                                                UpdateStatus::Cancelled => "×",
-                                                _ => "",
-                                            })
-                                    )
-                            }
-                        }
+                        div()
+                            .text_size(primary_size)
+                            .font_weight(FontWeight::BOLD)
+                            .text_color(theme_color)
+                            .child(primary_text),
                     )
+                    .child(if is_downloading {
+                        div().text_sm().text_color(rgb(0xa1a1aa)).child(status_text)
+                    } else {
+                        div().h(px(0.0))
+                    }),
+            )
+            .child(if let UpdateStatus::Downloading = self.status {
+                div()
+                    .w_full()
+                    .h(px(4.0))
+                    .bg(rgb(0x27272a))
+                    .rounded_full()
                     .child(
                         div()
-                            .text_sm()
-                            .text_color(rgb(0xa1a1aa)) // zinc-400
-                            .child(status_text)
+                            .h_full()
+                            .bg(theme_color)
+                            .rounded_full()
+                            .w(px(bar_width)),
                     )
-            )
-            // Middle Section: Progress Bar (Only when downloading)
-            .child(
-                if let UpdateStatus::Downloading = self.status {
-                    div()
-                        .w_full()
-                        .h(px(4.0))
-                        .bg(rgb(0x27272a)) // zinc-800
-                        .rounded_full()
-                        .child(
-                            div()
-                                .h_full()
-                                .bg(theme_color)
-                                .rounded_full()
-                                .w(px(bar_width))
-                        )
-                } else {
-                    div().w_full().h(px(4.0)) // Placeholder
-                }
-            )
-            // Bottom Section: Action Button
-            .child(
-                self.render_action_button(cx, theme_color)
-            )
+            } else {
+                div().w_full().h(px(4.0))
+            })
+            .child(self.render_action_button(cx))
     }
 }
 
 impl UpdateView {
-    fn render_action_button(&self, cx: &mut Context<Self>, _color: Rgba) -> impl IntoElement {
+    fn render_action_button(&self, cx: &mut Context<Self>) -> impl IntoElement {
         let status = self.status;
         let label = match status {
             UpdateStatus::Downloading => "取消",
@@ -147,8 +111,8 @@ impl UpdateView {
             .px(px(24.0))
             .py(px(8.0))
             .rounded_md()
-            .bg(rgb(0x27272a)) // zinc-800
-            .hover(|s| s.bg(rgb(0x3f3f46))) // zinc-700
+            .bg(rgb(0x27272a))
+            .hover(|s| s.bg(rgb(0x3f3f46)))
             .flex()
             .items_center()
             .justify_center()
@@ -157,10 +121,11 @@ impl UpdateView {
                     .text_sm()
                     .font_weight(FontWeight::MEDIUM)
                     .text_color(rgb(0xffffff))
-                    .child(label)
+                    .child(label),
             )
-            .on_mouse_down(MouseButton::Left, cx.listener(move |view, _, _window, _cx| {
-                match status {
+            .on_mouse_down(
+                MouseButton::Left,
+                cx.listener(move |view, _, _window, _cx| match status {
                     UpdateStatus::Downloading => {
                         view.status = UpdateStatus::Cancelled;
                     }
@@ -172,7 +137,7 @@ impl UpdateView {
                         view.progress = 0.0;
                         let _ = view.retry_tx.try_send(UiMsg::Retry);
                     }
-                }
-            }))
+                }),
+            )
     }
 }
