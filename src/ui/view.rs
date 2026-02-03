@@ -3,8 +3,8 @@ use gpui::*;
 
 use super::UiMsg;
 
-pub(crate) const WINDOW_WIDTH: f32 = 300.0;
-pub(crate) const WINDOW_HEIGHT: f32 = 180.0;
+pub(crate) const WINDOW_WIDTH: f32 = 360.0;
+pub(crate) const WINDOW_HEIGHT: f32 = 220.0;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum UpdateStatus {
@@ -25,14 +25,15 @@ impl Render for UpdateView {
         let progress = self.progress.clamp(0.0, 1.0);
         let percentage = (progress * 100.0).round() as i32;
 
-        // Theme Colors - Minimalist Dark
-        let root_bg = rgb(0x09090b); // zinc-950
-
-        let theme_color = match self.status {
-            UpdateStatus::Completed => rgb(0x22c55e), // green-500
-            UpdateStatus::Failed | UpdateStatus::Cancelled => rgb(0xef4444), // red-500
-            _ => rgb(0x3b82f6),                       // blue-500
-        };
+        // Colors from React version
+        let slate_900 = rgb(0x0f172a);
+        let white_10 = rgba(0xffffff1a);
+        let white_20 = rgba(0xffffff33);
+        let white_60 = rgba(0xffffff99);
+        let blue_400 = rgb(0x60a5fa);
+        let blue_500 = rgb(0x3b82f6);
+        let green_400 = rgb(0x4ade80);
+        let green_500 = rgb(0x22c55e);
 
         let status_text = match self.status {
             UpdateStatus::Downloading => "正在更新...",
@@ -41,101 +42,184 @@ impl Render for UpdateView {
             UpdateStatus::Cancelled => "已取消",
         };
 
-        // Calculate progress bar width (300 - 48 padding = 252)
-        let bar_width = 252.0 * progress;
+        let status_color = match self.status {
+            UpdateStatus::Completed => green_400,
+            _ => blue_400,
+        };
 
         div()
             .size_full()
-            .bg(root_bg)
+            .bg(slate_900)
             .flex()
-            .flex_col()
             .items_center()
             .justify_center()
-            .p(px(24.0))
-            .gap(px(20.0))
             .child(
-                // Top Section: Icon/Percentage
                 div()
+                    .w(px(360.0))
+                    .bg(white_10)
+                    .rounded_xl()
+                    .border_1()
+                    .border_color(white_20)
+                    .overflow_hidden()
                     .flex()
                     .flex_col()
                     .items_center()
-                    .gap(px(4.0))
+                    .p(px(20.0))
                     .child(
-                        div()
-                            .text_size(px(42.0))
-                            .font_weight(FontWeight::BOLD)
-                            .text_color(theme_color)
-                            .child(format!("{}%", percentage))
+                        // Progress Button Placeholder (Circular Progress)
+                        div().mb(px(8.0)).child(self.render_progress_button(cx)),
                     )
                     .child(
+                        // Title
                         div()
-                            .text_sm()
-                            .text_color(rgb(0xa1a1aa)) // zinc-400
-                            .child(status_text)
+                            .text_lg()
+                            .font_weight(FontWeight::SEMIBOLD)
+                            .text_color(rgb(0xffffff))
+                            .mb(px(12.0))
+                            .child(status_text),
                     )
-            )
-            // Middle Section: Progress Bar
-            .child(
-                div()
-                    .w_full()
-                    .h(px(6.0))
-                    .bg(rgb(0x27272a)) // zinc-800
-                    .rounded_full()
                     .child(
+                        // Progress Section
                         div()
-                            .h_full()
-                            .bg(theme_color)
-                            .rounded_full()
-                            .w(px(bar_width))
+                            .w_full()
+                            .mb(px(16.0))
+                            .child(
+                                div()
+                                    .flex()
+                                    .justify_between()
+                                    .items_center()
+                                    .mb(px(8.0))
+                                    .child(div().text_xs().text_color(white_60).child("进度"))
+                                    .child(
+                                        div()
+                                            .text_xs()
+                                            .font_weight(FontWeight::SEMIBOLD)
+                                            .text_color(status_color)
+                                            .child(format!("{}%", percentage)),
+                                    ),
+                            )
+                            .child(
+                                // Progress Bar
+                                div()
+                                    .relative()
+                                    .h(px(8.0))
+                                    .w_full()
+                                    .bg(white_10)
+                                    .rounded_full()
+                                    .overflow_hidden()
+                                    .child(
+                                        div()
+                                            .h_full()
+                                            .bg(if self.status == UpdateStatus::Completed {
+                                                green_500
+                                            } else {
+                                                blue_500
+                                            })
+                                            .rounded_full()
+                                            .w(relative(progress)),
+                                    ),
+                            )
+                            .child(
+                                // Progress Details
+                                div()
+                                    .flex()
+                                    .justify_end()
+                                    .mt(px(8.0))
+                                    .text_xs()
+                                    .text_color(rgba(0xffffff66))
+                                    .child(match self.status {
+                                        UpdateStatus::Downloading => "约剩 30 秒",
+                                        UpdateStatus::Cancelled | UpdateStatus::Failed => "已取消",
+                                        _ => "",
+                                    }),
+                            ),
                     )
-            )
-            // Bottom Section: Action Button
-            .child(
-                self.render_action_button(cx, theme_color)
+                    .child(
+                        // Action Buttons
+                        self.render_action_button(cx),
+                    ),
             )
     }
 }
 
 impl UpdateView {
-    fn render_action_button(&self, cx: &mut Context<Self>, _color: Rgba) -> impl IntoElement {
-        let status = self.status;
-        let label = match status {
-            UpdateStatus::Downloading => "取消",
-            UpdateStatus::Completed => "立即重启",
-            UpdateStatus::Failed | UpdateStatus::Cancelled => "重试",
+    fn render_progress_button(&self, _cx: &mut Context<Self>) -> impl IntoElement {
+        let _is_active = self.status == UpdateStatus::Downloading;
+        let is_completed = self.status == UpdateStatus::Completed;
+        let is_failed =
+            self.status == UpdateStatus::Failed || self.status == UpdateStatus::Cancelled;
+
+        let color = if is_completed {
+            rgb(0x22c55e)
+        } else if is_failed {
+            rgb(0xef4444)
+        } else {
+            rgb(0x60a5fa)
         };
 
         div()
-            .cursor_pointer()
-            .px(px(32.0))
-            .py(px(8.0))
-            .rounded_md()
-            .bg(rgb(0x27272a)) // zinc-800
-            .hover(|s| s.bg(rgb(0x3f3f46))) // zinc-700
+            .relative()
+            .size(px(48.0))
             .flex()
             .items_center()
             .justify_center()
             .child(
+                // Outer ring (simplified as a border for now)
                 div()
-                    .text_sm()
-                    .font_weight(FontWeight::MEDIUM)
-                    .text_color(rgb(0xffffff))
-                    .child(label)
+                    .absolute()
+                    .size_full()
+                    .rounded_full()
+                    .border_2()
+                    .border_color(color),
             )
-            .on_mouse_down(MouseButton::Left, cx.listener(move |view, _, _window, _cx| {
-                match status {
-                    UpdateStatus::Downloading => {
-                        view.status = UpdateStatus::Cancelled;
-                    }
-                    UpdateStatus::Completed => {
-                        let _ = view.retry_tx.try_send(UiMsg::Quit);
-                    }
-                    UpdateStatus::Failed | UpdateStatus::Cancelled => {
-                        view.status = UpdateStatus::Downloading;
-                        view.progress = 0.0;
-                        let _ = view.retry_tx.try_send(UiMsg::Retry);
-                    }
-                }
-            }))
+            .child(
+                // Inner circle with icon
+                div()
+                    .size(px(28.0))
+                    .rounded_full()
+                    .bg(if is_failed { rgba(0xef444433) } else { color })
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .child(match self.status {
+                        UpdateStatus::Completed => "✓",
+                        UpdateStatus::Failed | UpdateStatus::Cancelled => "✕",
+                        _ => "↓",
+                    }),
+            )
+    }
+
+    fn render_action_button(&self, _cx: &mut Context<Self>) -> impl IntoElement {
+        let retry_tx = self.retry_tx.clone();
+
+        match self.status {
+            UpdateStatus::Downloading => div(),
+            UpdateStatus::Completed => div()
+                .w_full()
+                .py(px(6.0))
+                .rounded_lg()
+                .bg(rgb(0x22c55e))
+                .flex()
+                .items_center()
+                .justify_center()
+                .cursor_pointer()
+                .on_mouse_down(MouseButton::Left, move |_, _, _| {
+                    let _ = retry_tx.try_send(UiMsg::Quit);
+                })
+                .child(div().text_sm().text_color(rgb(0xffffff)).child("完成")),
+            _ => div()
+                .w_full()
+                .py(px(6.0))
+                .rounded_lg()
+                .bg(rgb(0x3b82f6))
+                .flex()
+                .items_center()
+                .justify_center()
+                .cursor_pointer()
+                .on_mouse_down(MouseButton::Left, move |_, _, _| {
+                    let _ = retry_tx.try_send(UiMsg::Retry);
+                })
+                .child(div().text_sm().text_color(rgb(0xffffff)).child("重试")),
+        }
     }
 }
